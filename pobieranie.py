@@ -3,6 +3,20 @@
 import requests
 import boto3
 import time
+import geopy.distance
+
+# special artificial timestamp value for keeping the last known location
+LATEST = -1
+
+def getCredentials():
+  secret_name = "panek/login"
+  region_name = "eu-west-1"
+
+  session = boto3.session.Session()
+  client = session.client(service_name='secretsmanager', region_name=region_name)
+  
+  get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+  return get_secret_value_response["SecretString"].replace('"', '').replace("{","").replace("}", "").split(":")
 
 def getLocations():
   s = requests.Session()
@@ -14,7 +28,8 @@ def getLocations():
                     })
   s.get("https://panel.panekcs.pl/security/login")
 
-  r = s.post(url = "https://panel.panekcs.pl/security/login", data={"UserName": "", "Password": ""})
+  username, password = getCredentials()
+  r = s.post(url = "https://panel.panekcs.pl/security/login", data={"UserName":username, "Password": password})
   assert r.status_code == 200
 
   r = s.post(url = "https://panel.panekcs.pl/Home/GetLocations", data = {})
@@ -35,14 +50,26 @@ def saveLocations(cars):
   table = dynamodb.Table('cars')
   for (registration, position) in cars:
      key = "PANEK " + registration
+     print(key)
+
+     r = table.get_item(Key = {'carId': key, 'date': LATEST})
      
-     r = table.put_item(Item = {'carId' : key, 'date' : now, 'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
+     shouldAdd = True
+     if r.has_key('Item'):
+        lastKnownEntry = r['Item']
+        prevPosition = (lastKnownEntry['long'], lastKnownEntry['lat'])
+        currentPosition = (position['lng'], position['lat'])
+        distance = geopy.distance.vincenty(prevPosition, currentPosition).km
 
+        print("Distance: %6.3f" % distance)
+        if distance < 0.1:
+           shouldAdd = False
+     
+     if shouldAdd: 
+       print("Moved")
+       r = table.put_item(Item = {'carId' : key, 'date' : now,    'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
+       r = table.put_item(Item = {'carId' : key, 'date' : LATEST, 'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
+
+getCredentials()
 locations = getLocations()
-print(locations[:10])
 saveLocations(locations)
-
-		
-
-
-
