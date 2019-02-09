@@ -1,0 +1,22 @@
+{
+    "dev": {
+        "apigateway_enabled": false,
+        "app_function": "panku.lambdaCollect", 
+        "aws_region": "eu-west-1", 
+        "events": [{
+           "function": "panku.lambdaCollect.lambda_handler",
+           "expression": "rate(10 minutes)"
+       }],
+        "keep_warm": false,
+        "lambda_handler": "panku.lambdaCollect.lambda_handler",
+        "manage_roles": false,
+        "memory_size": 256,
+        "profile_name": "default", 
+        "project_name": "panku-gdzie-jestes", 
+        "role_name": "panku-gdzie-jestes-lambda",
+        "role_arn": "arn:aws:iam::214582020536:role/panku-gdzie-jestes-lambda"
+        "runtime": "python2.7", 
+        "s3_bucket": "grzegon-panku-gdzie-jestes-zappa-deploy",
+        "timeout_seconds": 120
+    }
+}

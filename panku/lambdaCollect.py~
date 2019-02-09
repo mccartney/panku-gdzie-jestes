@@ -72,6 +72,9 @@ def saveLocations(cars):
        r = table.put_item(Item = {'carId' : key, 'date' : now,    'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
        r = table.put_item(Item = {'carId' : key, 'date' : LATEST, 'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
 
-getCredentials()
-locations = getLocations()
-saveLocations(locations)
+def my_handler(event, context):
+ getCredentials()
+ locations = getLocations()
+ saveLocations(locations)
+ return "OK"
+ 
