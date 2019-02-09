@@ -50,7 +50,6 @@ def saveLocations(cars):
   table = dynamodb.Table('cars')
   for (registration, position) in cars:
      key = "PANEK " + registration
-     print(key)
 
      r = table.get_item(Key = {'carId': key, 'date': LATEST})
      
@@ -61,12 +60,15 @@ def saveLocations(cars):
         currentPosition = (position['lng'], position['lat'])
         distance = geopy.distance.vincenty(prevPosition, currentPosition).km
 
-        print("Distance: %6.3f" % distance)
         if distance < 0.1:
+           distanceToBePrinted = "no change"
+           if (distance > 0.001): 
+             distanceToBePrinted= "distance: %6.3f" % distance
+           print("%s %s" % (key, distanceToBePrinted))
            shouldAdd = False
      
      if shouldAdd: 
-       print("Moved")
+       print("%s moved" % key)
        r = table.put_item(Item = {'carId' : key, 'date' : now,    'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
        r = table.put_item(Item = {'carId' : key, 'date' : LATEST, 'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
 
