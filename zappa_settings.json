@@ -5,7 +5,7 @@
         "aws_region": "eu-west-1", 
         "events": [{
            "function": "panku.lambdaCollect.lambda_handler",
-           "expression": "rate(10 minutes)"
+           "expressions": ["cron(0/10 6-23 * * ? *)", "cron(*/10 0-1 * * ? *)", "cron(36 1-5 * * ? *)"]
        }],
         "keep_warm": false,
         "lambda_handler": "panku.lambdaCollect.lambda_handler",
@@ -14,7 +14,7 @@
         "profile_name": "default", 
         "project_name": "panku-gdzie-jestes", 
         "role_name": "panku-gdzie-jestes-lambda",
-        "role_arn": "arn:aws:iam::214582020536:role/panku-gdzie-jestes-lambda"
+        "role_arn": "arn:aws:iam::214582020536:role/panku-gdzie-jestes-lambda",
         "runtime": "python2.7", 
         "s3_bucket": "grzegon-panku-gdzie-jestes-zappa-deploy",
         "timeout_seconds": 120
