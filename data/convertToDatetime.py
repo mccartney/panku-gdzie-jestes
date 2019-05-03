@@ -8,7 +8,7 @@ for line in fileinput.input():
     trimmed = line.strip()
     elements = trimmed.split(",")
     ts = int(elements[1])
-    elements[1] = datetime.utcfromtimestamp(ts).strftime("%Y/%m/%d %H:%M:%S")
+    elements[1] = datetime.fromtimestamp(ts).strftime("%Y/%m/%d %H:%M:%S")
     print(",".join(elements))
     
     
