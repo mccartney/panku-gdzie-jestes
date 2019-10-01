@@ -61,7 +61,8 @@ class Service(object):
        r = table.get_item(Key = {'carId': key, 'date': LATEST})
 
        shouldAdd = True
-       if r.has_key('Item'):
+       existedBefore = r.has_key('Item')
+       if existedBefore:
           lastKnownEntry = r['Item']
           prevPosition = (lastKnownEntry['long'], lastKnownEntry['lat'])
           currentPosition = (position['lng'], position['lat'])
@@ -76,8 +77,13 @@ class Service(object):
 
        if shouldAdd:
          print("%s moved" % key)
+         if existedBefore:
+           print("storing previous")
+           r = table.put_item(Item = {'carId' : key, 'date' : now-1,'long': prevPosition[0], 'lat': prevPosition[1]})
+           
          r = table.put_item(Item = {'carId' : key, 'date' : now,    'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
          r = table.put_item(Item = {'carId' : key, 'date' : LATEST, 'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
+
   def getAndSaveLocations(self):
     self.saveLocations(self.getLocations())
 
@@ -88,5 +94,5 @@ class Panek(Service):
     return "PANEK"
 
 def lambda_handler(event, context):
- Panek().getAndSaveLocations()
- return "OK"
+  Panek().getAndSaveLocations()
+  return "OK"
