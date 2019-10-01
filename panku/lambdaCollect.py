@@ -16,7 +16,7 @@ DYNAMO_BATCH_SIZE = 100
 def grouper(n, iterable):
     # Taken from https://stackoverflow.com/a/1625013/118587
     args = [iter(iterable)] * n
-    return ([e for e in t if e != None] for t in itertools.zip_longest(*args))
+    return ([e for e in t if e != None] for t in itertools.izip_longest(*args))
 
 class Service(object):
   def getSecretName(self):

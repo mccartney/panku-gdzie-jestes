@@ -17,6 +17,6 @@
         "role_arn": "arn:aws:iam::214582020536:role/panku-gdzie-jestes-lambda",
         "runtime": "python2.7", 
         "s3_bucket": "grzegon-panku-gdzie-jestes-zappa-deploy",
-        "timeout_seconds": 120
+        "timeout_seconds": 240
     }
 }
