@@ -13,5 +13,10 @@ Zaczęło się od Panka, ale obecnie wspierane są:
 - [traficar-stats](https://github.com/jakubste/traficar-stats)
 - [trafiblisko](https://github.com/consi/trafiblisko)
 
+## Veturilo / Nextbike
+- [nextibke2json](https://github.com/Informatic/nextbike2json)
+- [rowerynka](https://github.com/stasm/rowerynka)
+
+
 ## inne
 Chętnie wstawię link do twojego projektu - poproszę PR.
