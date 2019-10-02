@@ -131,9 +131,25 @@ class Veturilo(Service):
         ret.append((bike.get("number"), {"lng" : float(place.get("lng")), "lat": float(place.get("lat"))}))
     
     return ret
-     
+
+class Traficar(Service):
+  def identifierPerRegistration(self, registration):
+    return "TRAFICAR " + registration
+    
+  def getLocations(self):
+    s = requests.Session()
+    s.headers.update({"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:64.0) Gecko/20100101 Firefox/64.0",
+                      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                      "Accept-Language": "en-GB,en;q=0.7,en-US;q=0.3",
+                      "Upgrade-Insecure-Requests": "1",
+                      "DNT": "1",
+                      })
+    r = s.get("https://api.traficar.pl/eaw-rest-api/car?shapeId=2")
+    data = r.json()
+    return [(car['regNumber'], {"lng": car['longitude'], "lat":car['latitude']}) for car in data['cars']]
 
 def lambda_handler(event, context):
+  Traficar().getAndSaveLocations()
   Veturilo().getAndSaveLocations()
   Panek().getAndSaveLocations()
   return "OK"
