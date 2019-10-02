@@ -22,6 +22,7 @@ Zaczęło się od Panka, ale obecnie wspierane są:
 - [nextibke2json](https://github.com/Informatic/nextbike2json)
 - [rowerynka](https://github.com/stasm/rowerynka)
 
-
 ## inne
+- [WoBike](https://github.com/ubahnverleih/WoBike) - różne serwisy na świecie rowerowe
+
 Chętnie wstawię link do twojego projektu - poproszę PR.
