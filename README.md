@@ -1,5 +1,10 @@
 # panku-gdzie-jestes
 
+## Cel
+
+Zapisywać dane o dostępnych pojazdach z różnych usług sharingowych.
+
+## Zakres
 Zaczęło się od Panka, ale obecnie wspierane są:
 - [Panek Carsharing](https://panekcs.pl/)
 - [Veturilo / Nextbike](https://www.veturilo.waw.pl/)
