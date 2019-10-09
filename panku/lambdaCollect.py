@@ -6,17 +6,31 @@ import time
 import geopy.distance
 import xml.etree.ElementTree as ET
 import itertools
+import sys
+import pickle
 
-# special artificial timestamp value for keeping the last known location
-LATEST = -1
+S3_BUCKET = "panku-gdzie-jestes-latest-storage"
 
-# AWS DynamoDB limits
-DYNAMO_BATCH_SIZE = 100
+class LatestPositionStorage(object):
+  def __init__(self, service):
+    self.objectName = "%s.latest" % service
 
-def grouper(n, iterable):
-    # Taken from https://stackoverflow.com/a/1625013/118587
-    args = [iter(iterable)] * n
-    return ([e for e in t if e != None] for t in itertools.izip_longest(*args))
+  def getLatestPositionsForService(self):
+    s3 = boto3.resource('s3')
+
+    try:
+      obj = s3.Object(S3_BUCKET, self.objectName)
+      ret = pickle.loads(obj.get()['Body'].read())
+      print("Read %d positions from S3" % len(ret))
+      return ret
+    except:
+      print("Unexpected error:", sys.exc_info())  
+      return {}
+  def saveLatestPositionsForService(self, positions):
+    s3 = boto3.resource('s3')
+    print("Saving %d positions to S3" % (len(positions)))
+    pickle_byte_obj = pickle.dumps(positions)
+    s3.Object(S3_BUCKET, self.objectName).put(Body=pickle_byte_obj)
 
 class Service(object):
   def getSecretName(self):
@@ -35,45 +49,51 @@ class Service(object):
 
   def identifierPerRegistration(self, registration):
     pass
+    
+  def serviceId(self): 
+    # TODO: reverse it, let subclasses override this, and implement `identifierPerRegistration` here in the superclass
+    return self.identifierPerRegistration("").strip()
+    
+  def getLatestPositions(self):
+    return LatestPositionStorage(self.serviceId()).getLatestPositionsForService()
+  def saveLatestPositions(self, positions):
+    return LatestPositionStorage(self.serviceId()).saveLatestPositionsForService(positions)
 
   def saveLocations(self, cars):
     now = int(time.time())
     
+    latestPositions = self.getLatestPositions()
+    newPositions = latestPositions.copy()
+    
     table = boto3.resource('dynamodb', region_name='eu-west-1').Table('cars')
     dynamodb = boto3.client('dynamodb', region_name='eu-west-1')
-    for batch in grouper(DYNAMO_BATCH_SIZE, cars):
-    
-       askForLatest = [{'carId': {'S': self.identifierPerRegistration(registration)}, 'date': {'N': str(LATEST)}} for (registration, position) in batch]
-       print("Asking for %s" % askForLatest)
-       lookupResult = dynamodb.batch_get_item(RequestItems = {'cars': {'Keys': askForLatest}})['Responses']['cars']
-    
-       lookupByCarId = dict([(lookup['carId']['S'], dict([(key, list(value.items())[0][1]) for key, value in lookup.items()])) for lookup in lookupResult])
-       
-       for (registration, position) in batch:
-         key = self.identifierPerRegistration(registration) 
-         lookup = lookupByCarId.get(key)
-         shouldAdd = True
-         existedBefore = lookup is not None
+    for (registration, position) in cars:
+       key = self.identifierPerRegistration(registration) 
+       latestPosition = latestPositions.get(key)
+       shouldAdd = True
+       existedBefore = latestPosition is not None
+       if existedBefore:
+          prevPosition = (latestPosition['long'], latestPosition['lat'])
+          currentPosition = (position['lng'], position['lat'])
+          distance = geopy.distance.vincenty(prevPosition, currentPosition).km
+
+          if distance < 0.1:
+             distanceToBePrinted = "no change"
+             if (distance > 0.001):
+               distanceToBePrinted= "distance: %6.3f" % distance
+             print("%s %s" % (key, distanceToBePrinted))
+             shouldAdd = False
+
+       if shouldAdd:
+         print("%s moved" % key)
          if existedBefore:
-            prevPosition = (lookup['long'], lookup['lat'])
-            currentPosition = (position['lng'], position['lat'])
-            distance = geopy.distance.vincenty(prevPosition, currentPosition).km
+           print("storing previous")
+           r = table.put_item(Item = {'carId' : key, 'date' : now-1,'long': prevPosition[0], 'lat': prevPosition[1]})
 
-            if distance < 0.1:
-               distanceToBePrinted = "no change"
-               if (distance > 0.001):
-                 distanceToBePrinted= "distance: %6.3f" % distance
-               print("%s %s" % (key, distanceToBePrinted))
-               shouldAdd = False
-
-         if shouldAdd:
-           print("%s moved" % key)
-           if existedBefore:
-             print("storing previous")
-             r = table.put_item(Item = {'carId' : key, 'date' : now-1,'long': prevPosition[0], 'lat': prevPosition[1]})
-
-           r = table.put_item(Item = {'carId' : key, 'date' : now,    'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
-           r = table.put_item(Item = {'carId' : key, 'date' : LATEST, 'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
+         r = table.put_item(Item = {'carId' : key, 'date' : now,    'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
+         
+         newPositions[key] = {'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']}
+    self.saveLatestPositions(newPositions)         
 
   def getAndSaveLocations(self):
     self.saveLocations(self.getLocations())
@@ -149,7 +169,7 @@ class Traficar(Service):
     return [(car['regNumber'], {"lng": car['longitude'], "lat":car['latitude']}) for car in data['cars']]
 
 def lambda_handler(event, context):
-  Traficar().getAndSaveLocations()
-  Veturilo().getAndSaveLocations()
-  Panek().getAndSaveLocations()
+  services = [Traficar, Veturilo, Panek]
+  for service in services:
+   service().getAndSaveLocations()
   return "OK"
