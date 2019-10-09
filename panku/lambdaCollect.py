@@ -78,11 +78,7 @@ class Service(object):
           distance = geopy.distance.vincenty(prevPosition, currentPosition).km
 
           if distance < 0.1:
-             distanceToBePrinted = "no change"
-             if (distance > 0.001):
-               distanceToBePrinted= "distance: %6.3f" % distance
-             print("%s %s" % (key, distanceToBePrinted))
-             shouldAdd = False
+           shouldAdd = False
 
        if shouldAdd:
          print("%s moved" % key)
@@ -171,5 +167,6 @@ class Traficar(Service):
 def lambda_handler(event, context):
   services = [Traficar, Veturilo, Panek]
   for service in services:
+   print("==== Service %s" % service)
    service().getAndSaveLocations()
   return "OK"
