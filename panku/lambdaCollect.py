@@ -83,7 +83,6 @@ class Service(object):
        if shouldAdd:
          print("%s moved" % key)
          if existedBefore:
-           print("storing previous")
            r = table.put_item(Item = {'carId' : key, 'date' : now-1,'long': prevPosition[0], 'lat': prevPosition[1]})
 
          r = table.put_item(Item = {'carId' : key, 'date' : now,    'long': "%8.6f" % position['lng'], 'lat': "%8.6f" % position['lat']})
